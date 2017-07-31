@@ -7,12 +7,12 @@ import wave
 import recorder
 
 from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.svm import SVC
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
-
+from sklearn.preprocessing import Normalizer
 n_datas = 20
 X = []
 y = []
@@ -20,7 +20,7 @@ for i in range(n_datas):
     no, _ = sf.read('no_{}.wav'.format(i))
     yes, _ = sf.read('yes_{}.wav'.format(i))
     no = no[:, 0]
-    yes = yes[:, 0] #面倒くさいので片方だけ
+    yes = yes[:, 0]  # 面倒くさいので片方だけ
     X.append(no)
     X.append(yes)
     y.append(0)
@@ -30,16 +30,19 @@ X = np.array(X)
 y = np.array(y)
 X_fft = np.array([np.fft.fft(x) for x in X])
 X_fft = np.fft.fft(X)
-X = np.array([np.hstack((x.real**2+x.imag**2, np.arctan2(x.real, x.imag))) for x in X_fft])
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4)
+X = np.array(
+    [np.hstack((x.real**2 + x.imag**2, np.arctan2(x.real, x.imag))) for x in X_fft])
 clf = RandomForestClassifier()
-clf.fit(X_train, y_train)
-print('accuracy score:', accuracy_score(y_test, clf.predict(X_test)))
+scores = cross_val_score(clf, X, y, cv=5)
+print('score:{} (+/-){}'.format(scores.mean(), scores.std()*2))
+
+#Use all data to train model
+clf.fit(X, y)
 
 rec = recorder.WaveRecorder()
 yesno = ['No', 'Yes']
 while True:
-    print('Press input to start recording. Type end to finish recording.')
+    print('Press enter to start recording. Type end to finish recording.')
     if input() == 'end':
         break
 
@@ -47,8 +50,6 @@ while True:
     wav, _ = sf.read('output.wav')
     wav = np.array(wav[:, 0])
     wf = np.fft.fft(wav)
-    wav = np.hstack((wf.real**2+wf.imag**2, np.arctan2(wf.real, wf.imag)))
+    wav = np.hstack((wf.real**2 + wf.imag**2, np.arctan2(wf.real, wf.imag)))
     pred = clf.predict(np.array([wav]))
     print(yesno[int(pred)])
-
-
