@@ -34,7 +34,7 @@ X = np.array(
     [np.hstack((x.real**2 + x.imag**2, np.arctan2(x.real, x.imag))) for x in X_fft])
 clf = RandomForestClassifier()
 scores = cross_val_score(clf, X, y, cv=5)
-print('score:{} (+/-{})'.format(scores.mean(), scores.std()*2))
+print('score:{:.3f} (+/-{:.3f})'.format(scores.mean(), scores.std()*2))
 
 #Use all data to train model
 clf.fit(X, y)
